@@ -34,11 +34,11 @@ args = parser.parse_args()
 def main():    
     prop = utils.get_prop(args)
     path = './data/' + prop['dataset'] + '/'
-    
+    print("prop: " , prop)
     print('Data loading start...')
     X_train, y_train, X_test, y_test = utils.data_loader(args.dataset, path, prop['task_type'])
     print('Data loading complete...')
-
+    print(f"X_train.shape: {X_train.shape}, y_train: {y_train.shape}, X_test.shape: {X_test.shape}, y_test.shape:{y_test.shape}")
     print('Data preprocessing start...')
     X_train_task, y_train_task, X_test, y_test = utils.preprocess(prop, X_train, y_train, X_test, y_test)
     print(X_train_task.shape, y_train_task.shape, X_test.shape, y_test.shape)

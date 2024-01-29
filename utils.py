@@ -4,6 +4,7 @@ Created on Sun Mar 28 01:05:24 2021
 
 @author: Ranak Roy Chowdhury
 """
+import logging
 import warnings, pickle, torch, math, os, random, numpy as np
 from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score
 
@@ -58,15 +59,15 @@ def get_prop(args):
 
 
 def data_loader(dataset, data_path, task_type): 
-    X_train = np.load(os.path.join(data_path + 'X_train.npy'), allow_pickle = True).astype(np.float)
-    X_test = np.load(os.path.join(data_path + 'X_test.npy'), allow_pickle = True).astype(np.float)
+    X_train = np.load(os.path.join(data_path + 'X_train.npy'), allow_pickle = True).astype(float)
+    X_test = np.load(os.path.join(data_path + 'X_test.npy'), allow_pickle = True).astype(float)
 
     if task_type == 'classification':
         y_train = np.load(os.path.join(data_path + 'y_train.npy'), allow_pickle = True)
         y_test = np.load(os.path.join(data_path + 'y_test.npy'), allow_pickle = True)
     else:
-        y_train = np.load(os.path.join(data_path + 'y_train.npy'), allow_pickle = True).astype(np.float)
-        y_test = np.load(os.path.join(data_path + 'y_test.npy'), allow_pickle = True).astype(np.float)
+        y_train = np.load(os.path.join(data_path + 'y_train.npy'), allow_pickle = True).astype(float)
+        y_test = np.load(os.path.join(data_path + 'y_test.npy'), allow_pickle = True).astype(float)
         
     return X_train, y_train, X_test, y_test
     
@@ -187,7 +188,7 @@ def compute_task_loss(nclasses, model, device, criterion_task, y_train_task, bat
 
 def multitask_train(model, criterion_tar, criterion_task, optimizer, X_train_tar, X_train_task, y_train_tar_masked, y_train_tar_unmasked, \
                     y_train_task, boolean_indices_masked, boolean_indices_unmasked, prop):
-    
+    print(f"[multitask_train] X_train_task :{X_train_task.shape},X_train_tar.shape:{X_train_tar.shape},y_train_task.shape:{y_train_task.shape},y_train_tar_masked.shape:{y_train_tar_masked.shape},y_train_tar_unmasked.shape:{y_train_tar_unmasked.shape}")
     model.train() # Turn on the train mode
     total_loss_tar_masked, total_loss_tar_unmasked, total_loss_task = 0.0, 0.0, 0.0
     num_batches = math.ceil(X_train_tar.shape[0] / prop['batch'])
