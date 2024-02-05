@@ -49,10 +49,12 @@ class MultitaskTransformerModel(nn.Module):
     def __init__(self, task_type, device, nclasses, seq_len, batch, input_size, emb_size, nhead, nhid, nhid_tar, nhid_task, nlayers, dropout = 0.1):
         super(MultitaskTransformerModel, self).__init__()
         # from torch.nn import TransformerEncoder, TransformerEncoderLayer
+        # input_size 特征维度
         print(f"---MultitaskTransformerModel init---")
         print(f"input_size:{input_size}, emb_size:{emb_size}, batch:{batch},seq_len:{seq_len},")
         self.trunk_net = nn.Sequential(
             nn.Linear(input_size, emb_size),
+            # 因为原数据已经被permute(1,0,2) 所以中间维度为batch
             nn.BatchNorm1d(batch),
             PositionalEncoding(seq_len, emb_size, dropout),
             nn.BatchNorm1d(batch)
@@ -126,27 +128,27 @@ class MultitaskTransformerModel(nn.Module):
         return output, attn
 
 
-'''
-device = 'cuda:2'    
-lr, dropout = 0.01, 0.01
-nclasses, seq_len, batch, input_size = 12, 5, 11, 10
-emb_size, nhid, nhead, nlayers = 32, 128, 2, 3
-nhid_tar, nhid_task = 128, 128
-task_type = 'regression'
 
-model = MultitaskTransformerModel(task_type, device, nclasses, seq_len, batch, input_size, emb_size, nhead, nhid, nhid_tar, nhid_task, nlayers, dropout = 0.1).to(device)
+# device = 'cuda:2'    
+# lr, dropout = 0.01, 0.01
+# nclasses, seq_len, batch, input_size = 12, 5, 11, 10
+# emb_size, nhid, nhead, nlayers = 32, 128, 2, 3
+# nhid_tar, nhid_task = 128, 128
+# task_type = 'regression'
 
-x = torch.randn(batch, seq_len, input_size) * 50
-x = torch.as_tensor(x).float()
-print(x.shape)
+# model = MultitaskTransformerModel(task_type, device, nclasses, seq_len, batch, input_size, emb_size, nhead, nhid, nhid_tar, nhid_task, nlayers, dropout = 0.1).to(device)
 
-(out_tar, attn_tar), (out_task, attn_task) = model(torch.as_tensor(x, device = device), 'reconstruction'), model(torch.as_tensor(x, device = device), task_type)
-print(out_tar.shape)
-print(attn_tar.shape)
+# x = torch.randn(batch, seq_len, input_size) * 50
+# x = torch.as_tensor(x).float()
+# print(x.shape)
 
-print(out_task.shape)
-print(attn_task.shape)
-'''
+# (out_tar, attn_tar), (out_task, attn_task) = model(torch.as_tensor(x, device = device), 'reconstruction'), model(torch.as_tensor(x, device = device), task_type)
+# print(out_tar.shape)
+# print(attn_tar.shape)
+
+# print(out_task.shape)
+# print(attn_task.shape)
+
 
 
 # =============================================================================

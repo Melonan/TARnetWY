@@ -45,6 +45,8 @@ def main():
     print('Data preprocessing complete...')
 
     prop['nclasses'] = torch.max(y_train_task).item() + 1 if prop['task_type'] == 'classification' else None
+    # seq_len 时间步长度
+    # input_size 特征维度
     prop['dataset'], prop['seq_len'], prop['input_size'] = prop['dataset'], X_train_task.shape[1], X_train_task.shape[2]
     prop['device'] = torch.device('cuda:0' if torch.cuda.is_available() else "cpu")
     

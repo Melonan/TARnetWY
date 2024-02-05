@@ -1,0 +1,269 @@
+[NbConvertApp] Converting notebook multi-geng.ipynb to notebook
+2024-01-30 13:32:45.093505: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2024-01-30 13:32:46.063015: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
+Traceback (most recent call last):
+  File "/data4/conda_envs/g2/bin/jupyter-nbconvert", line 8, in <module>
+    sys.exit(main())
+  File "/data4/conda_envs/g2/lib/python3.8/site-packages/jupyter_core/application.py", line 280, in launch_instance
+    super().launch_instance(argv=argv, **kwargs)
+  File "/data4/conda_envs/g2/lib/python3.8/site-packages/traitlets/config/application.py", line 992, in launch_instance
+    app.start()
+  File "/data4/conda_envs/g2/lib/python3.8/site-packages/nbconvert/nbconvertapp.py", line 420, in start
+    self.convert_notebooks()
+  File "/data4/conda_envs/g2/lib/python3.8/site-packages/nbconvert/nbconvertapp.py", line 597, in convert_notebooks
+    self.convert_single_notebook(notebook_filename)
+  File "/data4/conda_envs/g2/lib/python3.8/site-packages/nbconvert/nbconvertapp.py", line 563, in convert_single_notebook
+    output, resources = self.export_single_notebook(
+  File "/data4/conda_envs/g2/lib/python3.8/site-packages/nbconvert/nbconvertapp.py", line 487, in export_single_notebook
+    output, resources = self.exporter.from_filename(
+  File "/data4/conda_envs/g2/lib/python3.8/site-packages/nbconvert/exporters/exporter.py", line 201, in from_filename
+    return self.from_file(f, resources=resources, **kw)
+  File "/data4/conda_envs/g2/lib/python3.8/site-packages/nbconvert/exporters/exporter.py", line 220, in from_file
+    return self.from_notebook_node(
+  File "/data4/conda_envs/g2/lib/python3.8/site-packages/nbconvert/exporters/notebook.py", line 36, in from_notebook_node
+    nb_copy, resources = super().from_notebook_node(nb, resources, **kw)
+  File "/data4/conda_envs/g2/lib/python3.8/site-packages/nbconvert/exporters/exporter.py", line 154, in from_notebook_node
+    nb_copy, resources = self._preprocess(nb_copy, resources)
+  File "/data4/conda_envs/g2/lib/python3.8/site-packages/nbconvert/exporters/exporter.py", line 353, in _preprocess
+    nbc, resc = preprocessor(nbc, resc)
+  File "/data4/conda_envs/g2/lib/python3.8/site-packages/nbconvert/preprocessors/base.py", line 48, in __call__
+    return self.preprocess(nb, resources)
+  File "/data4/conda_envs/g2/lib/python3.8/site-packages/nbconvert/preprocessors/execute.py", line 102, in preprocess
+    self.preprocess_cell(cell, resources, index)
+  File "/data4/conda_envs/g2/lib/python3.8/site-packages/nbconvert/preprocessors/execute.py", line 123, in preprocess_cell
+    cell = self.execute_cell(cell, index, store_history=True)
+  File "/data4/conda_envs/g2/lib/python3.8/site-packages/jupyter_core/utils/__init__.py", line 173, in wrapped
+    return loop.run_until_complete(inner)
+  File "/data4/conda_envs/g2/lib/python3.8/asyncio/base_events.py", line 616, in run_until_complete
+    return future.result()
+  File "/data4/conda_envs/g2/lib/python3.8/site-packages/nbclient/client.py", line 1062, in async_execute_cell
+    await self._check_raise_for_error(cell, cell_index, exec_reply)
+  File "/data4/conda_envs/g2/lib/python3.8/site-packages/nbclient/client.py", line 918, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
+------------------
+
+for x_train_fold, y_train_fold, x_val_fold, y_val_fold in k_splits:
+    logging.info(f"\n---fold:{idx}---")
+    logging.info(f"x_train_fold.shape:{x_train_fold.shape}, y_train_fold.shape:{y_train_fold.shape}, x_val_fold.shape:{x_val_fold.shape}, y_val_fold.shape:{y_val_fold.shape}")
+    
+    X_train_task, y_train_task, X_test, y_test = utils.preprocess(prop, x_train_fold, y_train_fold, x_val_fold, y_val_fold)
+    logging.info(f"After preprocess : X_train_task.shape:{X_train_task.shape}, y_train_task.shape:{y_train_task.shape}, X_test.shape:{ X_test.shape}, y_test.shape:{y_test.shape}")
+    
+    prop['nclasses'] = torch.max(y_train_task).item() + 1 if prop['task_type'] == 'classification' else None
+    prop['dataset'], prop['seq_len'], prop['input_size'] = prop['dataset'], X_train_task.shape[1], X_train_task.shape[2]
+    prop['device'] = torch.device('cuda:0' if torch.cuda.is_available() else "cpu")
+    logging.info(f"prop:{prop}")
+
+    idx+=1
+    logging.info('Initializing model...')
+    model, optimizer, criterion_tar, criterion_task, best_model, best_optimizer = utils.initialize_training(prop)
+    logging.info('Model intialized...')
+
+    logging.info('Training start...')
+    utils.training(model, optimizer, criterion_tar, criterion_task, best_model, best_optimizer, X_train_task, y_train_task, X_test, y_test, prop)
+    logging.info('Training complete...')
+
+# logging.info(f"Classifier x.shape={x.shape} ,y.shape={y.shape}, input_shape={input_shape}, nb_classes={nb_classes}")
+------------------
+
+----- stderr -----
+2024-01-30 13:32:48 INFO [root] [<module>:2] - 
+---fold:1---
+----- stderr -----
+2024-01-30 13:32:48 INFO [root] [<module>:3] - x_train_fold.shape:(123, 1088, 2), y_train_fold.shape:(123,), x_val_fold.shape:(41, 1088, 2), y_val_fold.shape:(41,)
+----- stderr -----
+2024-01-30 13:32:48 INFO [root] [preprocess:100] - --Preprocessing--
+----- stderr -----
+2024-01-30 13:32:48 INFO [root] [preprocess:101] - [preprocess] preprocessing X_train.shape:(123, 1088, 2), y_train.shape:(123,), X_test.shape:(41, 1088, 2), y_test.shape:(41,)
+----- stderr -----
+2024-01-30 13:32:48 INFO [root] [preprocess:111] - [preprocess] after process X_train.shape:(128, 1088, 2), y_train.shape:(123,), X_test.shape:(48, 1088, 2), y_test.shape:(41,)
+----- stderr -----
+2024-01-30 13:32:48 INFO [root] [<module>:6] - After preprocess : X_train_task.shape:torch.Size([128, 1088, 2]), y_train_task.shape:torch.Size([123]), X_test.shape:torch.Size([48, 1088, 2]), y_test.shape:torch.Size([41])
+----- stderr -----
+2024-01-30 13:32:48 INFO [root] [<module>:11] - prop:{'batch': 16, 'lr': 0.01, 'nlayers': 2, 'emb_size': 64, 'nhead': 8, 'task_rate': 0.5, 'masking_ratio': 0.15, 'task_type': 'classification', 'lamb': 0.8, 'epochs': 300, 'ratio_highest_attention': 0.5, 'avg': 'macro', 'dropout': 0.01, 'nhid': 128, 'nhid_task': 128, 'nhid_tar': 128, 'dataset': 'Kailuan', 'nclasses': 3, 'seq_len': 1088, 'input_size': 2, 'device': device(type='cuda', index=0)}
+----- stderr -----
+2024-01-30 13:32:48 INFO [root] [<module>:14] - Initializing model...
+----- stdout -----
+---MultitaskTransformerModel init---
+input_size:2, emb_size:64, batch:16,seq_len:1088,
+----- stderr -----
+2024-01-30 13:32:50 INFO [root] [<module>:16] - Model intialized...
+----- stderr -----
+2024-01-30 13:32:50 INFO [root] [<module>:18] - Training start...
+----- stderr -----
+2024-01-30 13:32:50 INFO [root] [attention_sampled_masking_heuristic:142] - [attention_sampled_masking_heuristic], ratio_highest_attention:0.5, masking_ratio:0.15
+----- stderr -----
+2024-01-30 13:32:50 INFO [root] [attention_sampled_masking_heuristic:146] - [attention_sampled_masking_heuristic] instance_weights.shape:torch.Size([128, 1088]),index.shape:torch.Size([128, 544])
+----- stderr -----
+2024-01-30 13:32:50 INFO [root] [random_instance_masking:156] - [random_instance_masking]: X.shape:torch.Size([128, 1088, 2]) ,indices.shape:(128, 164)
+----- stdout -----
+---MultitaskTransformerModel init---
+input_size:2, emb_size:64, batch:16,seq_len:1088,
+----- stderr -----
+2024-01-30 13:32:51 INFO [root] [random_instance_masking:162] - [random_instance_masking]: X.shape:torch.Size([128, 1088, 2]) ,boolean_indices.shape:(128, 1088),indices.shape:(128, 164),boolean_indices_masked.shape:(128, 1088, 2),boolean_indices_unmasked.shape:(128, 1088, 2)
+----- stderr -----
+2024-01-30 13:32:51 INFO [root] [random_instance_masking:172] - [random_instance_masking] :X_train_tar.shape:torch.Size([128, 1088, 2]), y_train_tar_masked.shape:torch.Size([128, 328]), y_train_tar_unmasked.shape:torch.Size([128, 1848])
+----- stderr -----
+2024-01-30 13:32:51 INFO [root] [multitask_train:208] - [multitask_train] X_train_task :torch.Size([128, 1088, 2]),X_train_tar.shape:torch.Size([128, 1088, 2]),y_train_task.shape:torch.Size([123]),y_train_tar_masked.shape:torch.Size([128, 328]),y_train_tar_unmasked.shape:torch.Size([128, 1848])
+----- stderr -----
+2024-01-30 13:32:51 INFO [root] [multitask_train:220] - [multitask_train] batch:0, num_inst:16, start:0, end:16
+----- stderr -----
+2024-01-30 13:32:51 INFO [root] [multitask_train:227] - [multitask_train] batch:0,batched_input_tar.shape:torch.Size([16, 1088, 2]),batched_input_task.shape:torch.Size([16, 1088, 2]), batched_boolean_indices_masked.shape:(16, 1088, 2),batched_boolean_indices_unmasked.shape:(16, 1088, 2)
+----- stderr -----
+2024-01-30 13:32:51 INFO [root] [compute_tar_loss:181] - [compute_tar_loss] out_tar.shape:torch.Size([16, 1088, 2])
+----- stderr -----
+2024-01-30 13:32:51 INFO [root] [compute_tar_loss:184] - [compute_tar_loss] out_tar_masked.shape:torch.Size([16, 328]),out_tar_unmasked:tensor([[ 0.2932, -0.4633,  0.3637,  ..., -0.6412, -0.1690, -0.6208],
+        [-0.0664, -0.6183, -0.1402,  ..., -1.0070,  0.0953, -0.8746],
+        [ 0.1354, -0.3068,  0.0734,  ..., -0.4149, -0.2060, -0.1623],
+        ...,
+        [-0.1440, -0.2839, -0.2105,  ..., -0.8389, -0.2656, -0.8538],
+        [-0.1881, -0.6185, -0.0768,  ..., -0.9614, -0.0931, -0.6671],
+        [ 0.2282, -0.7457,  0.2722,  ..., -0.7139, -0.2072, -0.8204]],
+       device='cuda:0', grad_fn=<ReshapeAliasBackward0>)
+----- stderr -----
+2024-01-30 13:32:51 INFO [root] [compute_tar_loss:187] - [compute_tar_loss] loss_tar_unmasked.shape:torch.Size([]),loss_tar_masked.shape:torch.Size([])
+----- stderr -----
+2024-01-30 13:32:51 INFO [root] [compute_task_loss:193] - [compute_task_loss]: criterion_task:CrossEntropyLoss(), y_train_task.shape:torch.Size([123]), batched_input_task.shape:torch.Size([16, 1088, 2]), task_type:classification, num_inst:16, start:0
+------------------
+
+[0;31m---------------------------------------------------------------------------[0m
+[0;31mOutOfMemoryError[0m                          Traceback (most recent call last)
+Cell [0;32mIn[21], line 19[0m
+[1;32m     16[0m logging[38;5;241m.[39minfo([38;5;124m'[39m[38;5;124mModel intialized...[39m[38;5;124m'[39m)
+[1;32m     18[0m logging[38;5;241m.[39minfo([38;5;124m'[39m[38;5;124mTraining start...[39m[38;5;124m'[39m)
+[0;32m---> 19[0m [43mutils[49m[38;5;241;43m.[39;49m[43mtraining[49m[43m([49m[43mmodel[49m[43m,[49m[43m [49m[43moptimizer[49m[43m,[49m[43m [49m[43mcriterion_tar[49m[43m,[49m[43m [49m[43mcriterion_task[49m[43m,[49m[43m [49m[43mbest_model[49m[43m,[49m[43m [49m[43mbest_optimizer[49m[43m,[49m[43m [49m[43mX_train_task[49m[43m,[49m[43m [49m[43my_train_task[49m[43m,[49m[43m [49m[43mX_test[49m[43m,[49m[43m [49m[43my_test[49m[43m,[49m[43m [49m[43mprop[49m[43m)[49m
+[1;32m     20[0m logging[38;5;241m.[39minfo([38;5;124m'[39m[38;5;124mTraining complete...[39m[38;5;124m'[39m)
+
+File [0;32m/data4/gsPrivate/TARNet/utils.py:311[0m, in [0;36mtraining[0;34m(model, optimizer, criterion_tar, criterion_task, best_model, best_optimizer, X_train_task, y_train_task, X_test, y_test, prop)[0m
+[1;32m    305[0m [38;5;28;01mfor[39;00m epoch [38;5;129;01min[39;00m [38;5;28mrange[39m([38;5;241m1[39m, prop[[38;5;124m'[39m[38;5;124mepochs[39m[38;5;124m'[39m] [38;5;241m+[39m [38;5;241m1[39m):
+[1;32m    306[0m     
+[1;32m    307[0m     [38;5;66;03m# 对训练数据进行随机实例掩码，准备重建任务的数据[39;00m
+[1;32m    308[0m     X_train_tar, y_train_tar_masked, y_train_tar_unmasked, boolean_indices_masked, boolean_indices_unmasked [38;5;241m=[39m \
+[1;32m    309[0m         random_instance_masking(X_train_task, prop[[38;5;124m'[39m[38;5;124mmasking_ratio[39m[38;5;124m'[39m], prop[[38;5;124m'[39m[38;5;124mratio_highest_attention[39m[38;5;124m'[39m], instance_weights)
+[0;32m--> 311[0m     tar_loss_masked, tar_loss_unmasked, task_loss, instance_weights [38;5;241m=[39m [43mmultitask_train[49m[43m([49m[43mmodel[49m[43m,[49m[43m [49m[43mcriterion_tar[49m[43m,[49m[43m [49m[43mcriterion_task[49m[43m,[49m[43m [49m[43moptimizer[49m[43m,[49m[43m [49m
+[1;32m    312[0m [43m                                        [49m[43mX_train_tar[49m[43m,[49m[43m [49m[43mX_train_task[49m[43m,[49m[43m [49m[43my_train_tar_masked[49m[43m,[49m[43m [49m[43my_train_tar_unmasked[49m[43m,[49m[43m [49m[43my_train_task[49m[43m,[49m[43m [49m
+[1;32m    313[0m [43m                                        [49m[43mboolean_indices_masked[49m[43m,[49m[43m [49m[43mboolean_indices_unmasked[49m[43m,[49m[43m [49m[43mprop[49m[43m)[49m
+[1;32m    315[0m     tar_loss_masked_arr[38;5;241m.[39mappend(tar_loss_masked)
+[1;32m    316[0m     tar_loss_unmasked_arr[38;5;241m.[39mappend(tar_loss_unmasked)
+
+File [0;32m/data4/gsPrivate/TARNet/utils.py:231[0m, in [0;36mmultitask_train[0;34m(model, criterion_tar, criterion_task, optimizer, X_train_tar, X_train_task, y_train_tar_masked, y_train_tar_unmasked, y_train_task, boolean_indices_masked, boolean_indices_unmasked, prop)[0m
+[1;32m    227[0m logging[38;5;241m.[39minfo([38;5;124mf[39m[38;5;124m"[39m[38;5;124m[multitask_train] batch:[39m[38;5;132;01m{[39;00mi[38;5;132;01m}[39;00m[38;5;124m,batched_input_tar.shape:[39m[38;5;132;01m{[39;00mbatched_input_tar[38;5;241m.[39mshape[38;5;132;01m}[39;00m[38;5;124m,batched_input_task.shape:[39m[38;5;132;01m{[39;00mbatched_input_task[38;5;241m.[39mshape[38;5;132;01m}[39;00m[38;5;124m, batched_boolean_indices_masked.shape:[39m[38;5;132;01m{[39;00mbatched_boolean_indices_masked[38;5;241m.[39mshape[38;5;132;01m}[39;00m[38;5;124m,batched_boolean_indices_unmasked.shape:[39m[38;5;132;01m{[39;00mbatched_boolean_indices_unmasked[38;5;241m.[39mshape[38;5;132;01m}[39;00m[38;5;124m"[39m)
+[1;32m    228[0m loss_tar_masked, loss_tar_unmasked [38;5;241m=[39m compute_tar_loss(model, prop[[38;5;124m'[39m[38;5;124mdevice[39m[38;5;124m'[39m], criterion_tar, y_train_tar_masked, y_train_tar_unmasked, \
+[1;32m    229[0m     batched_input_tar, batched_boolean_indices_masked, batched_boolean_indices_unmasked, num_inst, start)
+[0;32m--> 231[0m attn, loss_task [38;5;241m=[39m [43mcompute_task_loss[49m[43m([49m[43mprop[49m[43m[[49m[38;5;124;43m'[39;49m[38;5;124;43mnclasses[39;49m[38;5;124;43m'[39;49m[43m][49m[43m,[49m[43m [49m[43mmodel[49m[43m,[49m[43m [49m[43mprop[49m[43m[[49m[38;5;124;43m'[39;49m[38;5;124;43mdevice[39;49m[38;5;124;43m'[39;49m[43m][49m[43m,[49m[43m [49m[43mcriterion_task[49m[43m,[49m[43m [49m[43my_train_task[49m[43m,[49m[43m [49m[43m\[49m
+[1;32m    232[0m [43m    [49m[43mbatched_input_task[49m[43m,[49m[43m [49m[43mprop[49m[43m[[49m[38;5;124;43m'[39;49m[38;5;124;43mtask_type[39;49m[38;5;124;43m'[39;49m[43m][49m[43m,[49m[43m [49m[43mnum_inst[49m[43m,[49m[43m [49m[43mstart[49m[43m)[49m
+[1;32m    234[0m total_loss_tar_masked [38;5;241m+[39m[38;5;241m=[39m loss_tar_masked[38;5;241m.[39mitem() 
+[1;32m    235[0m total_loss_tar_unmasked [38;5;241m+[39m[38;5;241m=[39m loss_tar_unmasked[38;5;241m.[39mitem()
+
+File [0;32m/data4/gsPrivate/TARNet/utils.py:195[0m, in [0;36mcompute_task_loss[0;34m(nclasses, model, device, criterion_task, y_train_task, batched_input_task, task_type, num_inst, start)[0m
+[1;32m    193[0m logging[38;5;241m.[39minfo([38;5;124mf[39m[38;5;124m"[39m[38;5;124m[compute_task_loss]: criterion_task:[39m[38;5;132;01m{[39;00mcriterion_task[38;5;132;01m}[39;00m[38;5;124m, y_train_task.shape:[39m[38;5;132;01m{[39;00my_train_task[38;5;241m.[39mshape[38;5;132;01m}[39;00m[38;5;124m, batched_input_task.shape:[39m[38;5;132;01m{[39;00mbatched_input_task[38;5;241m.[39mshape[38;5;132;01m}[39;00m[38;5;124m, task_type:[39m[38;5;132;01m{[39;00mtask_type[38;5;132;01m}[39;00m[38;5;124m, num_inst:[39m[38;5;132;01m{[39;00mnum_inst[38;5;132;01m}[39;00m[38;5;124m, start:[39m[38;5;132;01m{[39;00mstart[38;5;132;01m}[39;00m[38;5;124m"[39m)
+[1;32m    194[0m model[38;5;241m.[39mtrain()
+[0;32m--> 195[0m out_task, attn [38;5;241m=[39m [43mmodel[49m[43m([49m[43mtorch[49m[38;5;241;43m.[39;49m[43mas_tensor[49m[43m([49m[43mbatched_input_task[49m[43m,[49m[43m [49m[43mdevice[49m[43m [49m[38;5;241;43m=[39;49m[43m [49m[43mdevice[49m[43m)[49m[43m,[49m[43m [49m[43mtask_type[49m[43m)[49m
+[1;32m    196[0m logging[38;5;241m.[39minfo([38;5;124mf[39m[38;5;124m"[39m[38;5;124m[compute_task_loss]:out_task.shape:[39m[38;5;132;01m{[39;00mout_task[38;5;241m.[39mshape[38;5;132;01m}[39;00m[38;5;124m,out_task[0]:[39m[38;5;132;01m{[39;00mout_task[[38;5;241m0[39m][38;5;132;01m}[39;00m[38;5;124m"[39m)
+[1;32m    197[0m out_task [38;5;241m=[39m out_task[38;5;241m.[39mview([38;5;241m-[39m[38;5;241m1[39m, nclasses) [38;5;28;01mif[39;00m task_type [38;5;241m==[39m [38;5;124m'[39m[38;5;124mclassification[39m[38;5;124m'[39m [38;5;28;01melse[39;00m out_task[38;5;241m.[39msqueeze()
+
+File [0;32m/data4/conda_envs/g2/lib/python3.8/site-packages/torch/nn/modules/module.py:1194[0m, in [0;36mModule._call_impl[0;34m(self, *input, **kwargs)[0m
+[1;32m   1190[0m [38;5;66;03m# If we don't have any hooks, we want to skip the rest of the logic in[39;00m
+[1;32m   1191[0m [38;5;66;03m# this function, and just call forward.[39;00m
+[1;32m   1192[0m [38;5;28;01mif[39;00m [38;5;129;01mnot[39;00m ([38;5;28mself[39m[38;5;241m.[39m_backward_hooks [38;5;129;01mor[39;00m [38;5;28mself[39m[38;5;241m.[39m_forward_hooks [38;5;129;01mor[39;00m [38;5;28mself[39m[38;5;241m.[39m_forward_pre_hooks [38;5;129;01mor[39;00m _global_backward_hooks
+[1;32m   1193[0m         [38;5;129;01mor[39;00m _global_forward_hooks [38;5;129;01mor[39;00m _global_forward_pre_hooks):
+[0;32m-> 1194[0m     [38;5;28;01mreturn[39;00m [43mforward_call[49m[43m([49m[38;5;241;43m*[39;49m[38;5;28;43minput[39;49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mkwargs[49m[43m)[49m
+[1;32m   1195[0m [38;5;66;03m# Do not call functions when jit is used[39;00m
+[1;32m   1196[0m full_backward_hooks, non_full_backward_hooks [38;5;241m=[39m [], []
+
+File [0;32m/data4/gsPrivate/TARNet/multitask_transformer_class.py:118[0m, in [0;36mMultitaskTransformerModel.forward[0;34m(self, x, task_type)[0m
+[1;32m    116[0m [38;5;28;01mdef[39;00m [38;5;21mforward[39m([38;5;28mself[39m, x, task_type):
+[1;32m    117[0m     x [38;5;241m=[39m [38;5;28mself[39m[38;5;241m.[39mtrunk_net(x[38;5;241m.[39mpermute([38;5;241m1[39m, [38;5;241m0[39m, [38;5;241m2[39m))
+[0;32m--> 118[0m     x, attn [38;5;241m=[39m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mtransformer_encoder[49m[43m([49m[43mx[49m[43m)[49m
+[1;32m    119[0m     x [38;5;241m=[39m [38;5;28mself[39m[38;5;241m.[39mbatch_norm(x)
+[1;32m    120[0m     [38;5;66;03m# x : seq_len x batch x emb_size[39;00m
+
+File [0;32m/data4/conda_envs/g2/lib/python3.8/site-packages/torch/nn/modules/module.py:1194[0m, in [0;36mModule._call_impl[0;34m(self, *input, **kwargs)[0m
+[1;32m   1190[0m [38;5;66;03m# If we don't have any hooks, we want to skip the rest of the logic in[39;00m
+[1;32m   1191[0m [38;5;66;03m# this function, and just call forward.[39;00m
+[1;32m   1192[0m [38;5;28;01mif[39;00m [38;5;129;01mnot[39;00m ([38;5;28mself[39m[38;5;241m.[39m_backward_hooks [38;5;129;01mor[39;00m [38;5;28mself[39m[38;5;241m.[39m_forward_hooks [38;5;129;01mor[39;00m [38;5;28mself[39m[38;5;241m.[39m_forward_pre_hooks [38;5;129;01mor[39;00m _global_backward_hooks
+[1;32m   1193[0m         [38;5;129;01mor[39;00m _global_forward_hooks [38;5;129;01mor[39;00m _global_forward_pre_hooks):
+[0;32m-> 1194[0m     [38;5;28;01mreturn[39;00m [43mforward_call[49m[43m([49m[38;5;241;43m*[39;49m[38;5;28;43minput[39;49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mkwargs[49m[43m)[49m
+[1;32m   1195[0m [38;5;66;03m# Do not call functions when jit is used[39;00m
+[1;32m   1196[0m full_backward_hooks, non_full_backward_hooks [38;5;241m=[39m [], []
+
+File [0;32m/data4/gsPrivate/TARNet/transformer.py:125[0m, in [0;36mTransformerEncoder.forward[0;34m(self, src, mask, src_key_padding_mask)[0m
+[1;32m    122[0m attn_output [38;5;241m=[39m torch[38;5;241m.[39mzeros((src[38;5;241m.[39mshape[[38;5;241m1[39m], src[38;5;241m.[39mshape[[38;5;241m0[39m], src[38;5;241m.[39mshape[[38;5;241m0[39m]), device [38;5;241m=[39m [38;5;28mself[39m[38;5;241m.[39mdevice) [38;5;66;03m# batch, seq_len, seq_len[39;00m
+[1;32m    124[0m [38;5;28;01mfor[39;00m mod [38;5;129;01min[39;00m [38;5;28mself[39m[38;5;241m.[39mlayers:
+[0;32m--> 125[0m     output, attn [38;5;241m=[39m [43mmod[49m[43m([49m[43moutput[49m[43m,[49m[43m [49m[43msrc_mask[49m[43m [49m[38;5;241;43m=[39;49m[43m [49m[43mmask[49m[43m,[49m[43m [49m[43msrc_key_padding_mask[49m[43m [49m[38;5;241;43m=[39;49m[43m [49m[43msrc_key_padding_mask[49m[43m)[49m
+[1;32m    126[0m     attn_output [38;5;241m+[39m[38;5;241m=[39m attn
+[1;32m    128[0m [38;5;28;01mif[39;00m [38;5;28mself[39m[38;5;241m.[39mnorm [38;5;129;01mis[39;00m [38;5;129;01mnot[39;00m [38;5;28;01mNone[39;00m:
+
+File [0;32m/data4/conda_envs/g2/lib/python3.8/site-packages/torch/nn/modules/module.py:1194[0m, in [0;36mModule._call_impl[0;34m(self, *input, **kwargs)[0m
+[1;32m   1190[0m [38;5;66;03m# If we don't have any hooks, we want to skip the rest of the logic in[39;00m
+[1;32m   1191[0m [38;5;66;03m# this function, and just call forward.[39;00m
+[1;32m   1192[0m [38;5;28;01mif[39;00m [38;5;129;01mnot[39;00m ([38;5;28mself[39m[38;5;241m.[39m_backward_hooks [38;5;129;01mor[39;00m [38;5;28mself[39m[38;5;241m.[39m_forward_hooks [38;5;129;01mor[39;00m [38;5;28mself[39m[38;5;241m.[39m_forward_pre_hooks [38;5;129;01mor[39;00m _global_backward_hooks
+[1;32m   1193[0m         [38;5;129;01mor[39;00m _global_forward_hooks [38;5;129;01mor[39;00m _global_forward_pre_hooks):
+[0;32m-> 1194[0m     [38;5;28;01mreturn[39;00m [43mforward_call[49m[43m([49m[38;5;241;43m*[39;49m[38;5;28;43minput[39;49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mkwargs[49m[43m)[49m
+[1;32m   1195[0m [38;5;66;03m# Do not call functions when jit is used[39;00m
+[1;32m   1196[0m full_backward_hooks, non_full_backward_hooks [38;5;241m=[39m [], []
+
+File [0;32m/data4/gsPrivate/TARNet/transformer.py:79[0m, in [0;36mTransformerEncoderLayer.forward[0;34m(self, src, src_mask, src_key_padding_mask)[0m
+[1;32m     70[0m [38;5;28;01mdef[39;00m [38;5;21mforward[39m([38;5;28mself[39m, src, src_mask [38;5;241m=[39m [38;5;28;01mNone[39;00m, src_key_padding_mask [38;5;241m=[39m [38;5;28;01mNone[39;00m):
+[1;32m     71[0m [38;5;250m    [39m[38;5;124mr[39m[38;5;124;03m"""Pass the input through the encoder layer.[39;00m
+[1;32m     72[0m [38;5;124;03m    Args:[39;00m
+[1;32m     73[0m [38;5;124;03m        src: the sequence to the encoder layer (required).[39;00m
+[0;32m   (...)[0m
+[1;32m     77[0m [38;5;124;03m        see the docs in Transformer class.[39;00m
+[1;32m     78[0m [38;5;124;03m    """[39;00m
+[0;32m---> 79[0m     src2, attn [38;5;241m=[39m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mself_attn[49m[43m([49m[43msrc[49m[43m,[49m[43m [49m[43msrc[49m[43m,[49m[43m [49m[43msrc[49m[43m,[49m[43m [49m[43mattn_mask[49m[43m [49m[38;5;241;43m=[39;49m[43m [49m[43msrc_mask[49m[43m,[49m
+[1;32m     80[0m [43m                          [49m[43mkey_padding_mask[49m[43m [49m[38;5;241;43m=[39;49m[43m [49m[43msrc_key_padding_mask[49m[43m)[49m
+[1;32m     81[0m     src [38;5;241m=[39m src [38;5;241m+[39m [38;5;28mself[39m[38;5;241m.[39mdropout1(src2)
+[1;32m     82[0m     src [38;5;241m=[39m [38;5;28mself[39m[38;5;241m.[39mnorm1(src)
+
+File [0;32m/data4/conda_envs/g2/lib/python3.8/site-packages/torch/nn/modules/module.py:1194[0m, in [0;36mModule._call_impl[0;34m(self, *input, **kwargs)[0m
+[1;32m   1190[0m [38;5;66;03m# If we don't have any hooks, we want to skip the rest of the logic in[39;00m
+[1;32m   1191[0m [38;5;66;03m# this function, and just call forward.[39;00m
+[1;32m   1192[0m [38;5;28;01mif[39;00m [38;5;129;01mnot[39;00m ([38;5;28mself[39m[38;5;241m.[39m_backward_hooks [38;5;129;01mor[39;00m [38;5;28mself[39m[38;5;241m.[39m_forward_hooks [38;5;129;01mor[39;00m [38;5;28mself[39m[38;5;241m.[39m_forward_pre_hooks [38;5;129;01mor[39;00m _global_backward_hooks
+[1;32m   1193[0m         [38;5;129;01mor[39;00m _global_forward_hooks [38;5;129;01mor[39;00m _global_forward_pre_hooks):
+[0;32m-> 1194[0m     [38;5;28;01mreturn[39;00m [43mforward_call[49m[43m([49m[38;5;241;43m*[39;49m[38;5;28;43minput[39;49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mkwargs[49m[43m)[49m
+[1;32m   1195[0m [38;5;66;03m# Do not call functions when jit is used[39;00m
+[1;32m   1196[0m full_backward_hooks, non_full_backward_hooks [38;5;241m=[39m [], []
+
+File [0;32m/data4/conda_envs/g2/lib/python3.8/site-packages/torch/nn/modules/activation.py:1167[0m, in [0;36mMultiheadAttention.forward[0;34m(self, query, key, value, key_padding_mask, need_weights, attn_mask, average_attn_weights)[0m
+[1;32m   1156[0m     attn_output, attn_output_weights [38;5;241m=[39m F[38;5;241m.[39mmulti_head_attention_forward(
+[1;32m   1157[0m         query, key, value, [38;5;28mself[39m[38;5;241m.[39membed_dim, [38;5;28mself[39m[38;5;241m.[39mnum_heads,
+[1;32m   1158[0m         [38;5;28mself[39m[38;5;241m.[39min_proj_weight, [38;5;28mself[39m[38;5;241m.[39min_proj_bias,
+[0;32m   (...)[0m
+[1;32m   1164[0m         q_proj_weight[38;5;241m=[39m[38;5;28mself[39m[38;5;241m.[39mq_proj_weight, k_proj_weight[38;5;241m=[39m[38;5;28mself[39m[38;5;241m.[39mk_proj_weight,
+[1;32m   1165[0m         v_proj_weight[38;5;241m=[39m[38;5;28mself[39m[38;5;241m.[39mv_proj_weight, average_attn_weights[38;5;241m=[39maverage_attn_weights)
+[1;32m   1166[0m [38;5;28;01melse[39;00m:
+[0;32m-> 1167[0m     attn_output, attn_output_weights [38;5;241m=[39m [43mF[49m[38;5;241;43m.[39;49m[43mmulti_head_attention_forward[49m[43m([49m
+[1;32m   1168[0m [43m        [49m[43mquery[49m[43m,[49m[43m [49m[43mkey[49m[43m,[49m[43m [49m[43mvalue[49m[43m,[49m[43m [49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43membed_dim[49m[43m,[49m[43m [49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mnum_heads[49m[43m,[49m
+[1;32m   1169[0m [43m        [49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43min_proj_weight[49m[43m,[49m[43m [49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43min_proj_bias[49m[43m,[49m
+[1;32m   1170[0m [43m        [49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mbias_k[49m[43m,[49m[43m [49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mbias_v[49m[43m,[49m[43m [49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43madd_zero_attn[49m[43m,[49m
+[1;32m   1171[0m [43m        [49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mdropout[49m[43m,[49m[43m [49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mout_proj[49m[38;5;241;43m.[39;49m[43mweight[49m[43m,[49m[43m [49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mout_proj[49m[38;5;241;43m.[39;49m[43mbias[49m[43m,[49m
+[1;32m   1172[0m [43m        [49m[43mtraining[49m[38;5;241;43m=[39;49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mtraining[49m[43m,[49m
+[1;32m   1173[0m [43m        [49m[43mkey_padding_mask[49m[38;5;241;43m=[39;49m[43mkey_padding_mask[49m[43m,[49m[43m [49m[43mneed_weights[49m[38;5;241;43m=[39;49m[43mneed_weights[49m[43m,[49m
+[1;32m   1174[0m [43m        [49m[43mattn_mask[49m[38;5;241;43m=[39;49m[43mattn_mask[49m[43m,[49m[43m [49m[43maverage_attn_weights[49m[38;5;241;43m=[39;49m[43maverage_attn_weights[49m[43m)[49m
+[1;32m   1175[0m [38;5;28;01mif[39;00m [38;5;28mself[39m[38;5;241m.[39mbatch_first [38;5;129;01mand[39;00m is_batched:
+[1;32m   1176[0m     [38;5;28;01mreturn[39;00m attn_output[38;5;241m.[39mtranspose([38;5;241m1[39m, [38;5;241m0[39m), attn_output_weights
+
+File [0;32m/data4/conda_envs/g2/lib/python3.8/site-packages/torch/nn/functional.py:5161[0m, in [0;36mmulti_head_attention_forward[0;34m(query, key, value, embed_dim_to_check, num_heads, in_proj_weight, in_proj_bias, bias_k, bias_v, add_zero_attn, dropout_p, out_proj_weight, out_proj_bias, training, key_padding_mask, need_weights, attn_mask, use_separate_proj_weight, q_proj_weight, k_proj_weight, v_proj_weight, static_k, static_v, average_attn_weights)[0m
+[1;32m   5159[0m [38;5;28;01melse[39;00m:
+[1;32m   5160[0m     attn_output_weights [38;5;241m=[39m torch[38;5;241m.[39mbmm(q_scaled, k[38;5;241m.[39mtranspose([38;5;241m-[39m[38;5;241m2[39m, [38;5;241m-[39m[38;5;241m1[39m))
+[0;32m-> 5161[0m attn_output_weights [38;5;241m=[39m [43msoftmax[49m[43m([49m[43mattn_output_weights[49m[43m,[49m[43m [49m[43mdim[49m[38;5;241;43m=[39;49m[38;5;241;43m-[39;49m[38;5;241;43m1[39;49m[43m)[49m
+[1;32m   5162[0m [38;5;28;01mif[39;00m dropout_p [38;5;241m>[39m [38;5;241m0.0[39m:
+[1;32m   5163[0m     attn_output_weights [38;5;241m=[39m dropout(attn_output_weights, p[38;5;241m=[39mdropout_p)
+
+File [0;32m/data4/conda_envs/g2/lib/python3.8/site-packages/torch/nn/functional.py:1841[0m, in [0;36msoftmax[0;34m(input, dim, _stacklevel, dtype)[0m
+[1;32m   1839[0m     dim [38;5;241m=[39m _get_softmax_dim([38;5;124m"[39m[38;5;124msoftmax[39m[38;5;124m"[39m, [38;5;28minput[39m[38;5;241m.[39mdim(), _stacklevel)
+[1;32m   1840[0m [38;5;28;01mif[39;00m dtype [38;5;129;01mis[39;00m [38;5;28;01mNone[39;00m:
+[0;32m-> 1841[0m     ret [38;5;241m=[39m [38;5;28;43minput[39;49m[38;5;241;43m.[39;49m[43msoftmax[49m[43m([49m[43mdim[49m[43m)[49m
+[1;32m   1842[0m [38;5;28;01melse[39;00m:
+[1;32m   1843[0m     ret [38;5;241m=[39m [38;5;28minput[39m[38;5;241m.[39msoftmax(dim, dtype[38;5;241m=[39mdtype)
+
+[0;31mOutOfMemoryError[0m: CUDA out of memory. Tried to allocate 578.00 MiB (GPU 0; 11.91 GiB total capacity; 3.37 GiB already allocated; 126.06 MiB free; 3.52 GiB reserved in total by PyTorch) If reserved memory is >> allocated memory try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
+
+[NbConvertApp] Converting notebook multi-geng.ipynb to notebook
+2024-01-30 13:33:45.836460: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2024-01-30 13:33:46.719253: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
+[NbConvertApp] Writing 48636892 bytes to multi-geng.nbconvert.ipynb

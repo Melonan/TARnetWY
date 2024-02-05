@@ -97,6 +97,8 @@ def mean_standardize_transform(X, mean, std):
 
 
 def preprocess(prop, X_train, y_train, X_test, y_test):
+    logging.info(f"--Preprocessing--")
+    logging.info(f"[preprocess] preprocessing X_train.shape:{X_train.shape}, y_train.shape:{y_train.shape}, X_test.shape:{X_test.shape}, y_test.shape:{y_test.shape}")
     mean, std = mean_standardize_fit(X_train)
     X_train, X_test = mean_standardize_transform(X_train, mean, std), mean_standardize_transform(X_test, mean, std)
 
@@ -106,7 +108,7 @@ def preprocess(prop, X_train, y_train, X_test, y_test):
     
     X_train = make_perfect_batch(X_train, num_train_inst, num_train_samples)
     X_test = make_perfect_batch(X_test, num_test_inst, num_test_samples)
-
+    logging.info(f"[preprocess] after process X_train.shape:{X_train.shape}, y_train.shape:{y_train.shape}, X_test.shape:{X_test.shape}, y_test.shape:{y_test.shape}")
     X_train_task = torch.as_tensor(X_train).float()
     X_test = torch.as_tensor(X_test).float()
 
@@ -137,10 +139,13 @@ def initialize_training(prop):
 
 
 def attention_sampled_masking_heuristic(X, masking_ratio, ratio_highest_attention, instance_weights):
+    logging.info(f"[attention_sampled_masking_heuristic], ratio_highest_attention:{ratio_highest_attention}, masking_ratio:{masking_ratio}")
     # attention_weights = attention_weights.to('cpu')
     # instance_weights = torch.sum(attention_weights, axis = 1)
     res, index = instance_weights.topk(int(math.ceil(ratio_highest_attention * X.shape[1])))
+    logging.info(f"[attention_sampled_masking_heuristic] instance_weights.shape:{instance_weights.shape},index.shape:{index.shape}")
     index = index.cpu().data.tolist()
+    # 从对于第i个数据，从index[i] (即上一步已经选取出的前ratio_highest_attention比例个数据点) 中抽取masking_ratio比例个
     index2 = [random.sample(index[i], int(math.ceil(masking_ratio * X.shape[1]))) for i in range(X.shape[0])]
     return np.array(index2)
 
@@ -148,16 +153,23 @@ def attention_sampled_masking_heuristic(X, masking_ratio, ratio_highest_attentio
 
 def random_instance_masking(X, masking_ratio, ratio_highest_attention, instance_weights):
     indices = attention_sampled_masking_heuristic(X, masking_ratio, ratio_highest_attention, instance_weights)
+    logging.info(f"[random_instance_masking]: X.shape:{X.shape} ,indices.shape:{indices.shape}")
+    # 要掩盖的数据点indices 变为True false的形式
     boolean_indices = np.array([[True if i in index else False for i in range(X.shape[1])] for index in indices])
+    # boolean_indices 扩展到原本的数据格式(batchsize, seq_len, featuresize)
     boolean_indices_masked = np.repeat(boolean_indices[ : , : , np.newaxis], X.shape[2], axis = 2)
     boolean_indices_unmasked =  np.invert(boolean_indices_masked)
-    
+    logging.info(f"[random_instance_masking]: X.shape:{X.shape} ,boolean_indices.shape:{boolean_indices.shape},indices.shape:{indices.shape},boolean_indices_masked.shape:{boolean_indices_masked.shape},boolean_indices_unmasked.shape:{boolean_indices_unmasked.shape}")
     X_train_tar, y_train_tar_masked, y_train_tar_unmasked = np.copy(X), np.copy(X), np.copy(X)
+    # 将被掩盖的数据点都变成0，未掩盖的变成X原本的值
     X_train_tar = np.where(boolean_indices_unmasked, X, 0.0)
+    # 获取被掩盖的数据点
     y_train_tar_masked = y_train_tar_masked[boolean_indices_masked].reshape(X.shape[0], -1)
+    # 获取未被掩盖的数据点
     y_train_tar_unmasked = y_train_tar_unmasked[boolean_indices_unmasked].reshape(X.shape[0], -1)
     X_train_tar, y_train_tar_masked, y_train_tar_unmasked = torch.as_tensor(X_train_tar).float(), torch.as_tensor(y_train_tar_masked).float(), torch.as_tensor(y_train_tar_unmasked).float()
 
+    logging.info(f"[random_instance_masking] :X_train_tar.shape:{X_train_tar.shape}, y_train_tar_masked.shape:{y_train_tar_masked.shape}, y_train_tar_unmasked.shape:{y_train_tar_unmasked.shape}")
     return X_train_tar, y_train_tar_masked, y_train_tar_unmasked, boolean_indices_masked, boolean_indices_unmasked
 
     
@@ -166,29 +178,34 @@ def compute_tar_loss(model, device, criterion_tar, y_train_tar_masked, y_train_t
                     batched_boolean_indices_masked, batched_boolean_indices_unmasked, num_inst, start):
     model.train()
     out_tar = model(torch.as_tensor(batched_input_tar, device = device), 'reconstruction')[0]
-
+    logging.info(f"[compute_tar_loss] out_tar.shape:{out_tar.shape}")
     out_tar_masked = torch.as_tensor(out_tar[torch.as_tensor(batched_boolean_indices_masked)].reshape(out_tar.shape[0], -1), device = device)
     out_tar_unmasked = torch.as_tensor(out_tar[torch.as_tensor(batched_boolean_indices_unmasked)].reshape(out_tar.shape[0], -1), device = device)
-
+    logging.info(f"[compute_tar_loss] out_tar_masked.shape:{out_tar_masked.shape},out_tar_unmasked:{out_tar_unmasked}")
     loss_tar_masked = criterion_tar(out_tar_masked[ : num_inst], torch.as_tensor(y_train_tar_masked[start : start + num_inst], device = device))
     loss_tar_unmasked = criterion_tar(out_tar_unmasked[ : num_inst], torch.as_tensor(y_train_tar_unmasked[start : start + num_inst], device = device))
-    
+    logging.info(f"[compute_tar_loss] loss_tar_unmasked.shape:{loss_tar_unmasked.shape},loss_tar_masked.shape:{loss_tar_masked.shape}")
     return loss_tar_masked, loss_tar_unmasked
 
 
 
 def compute_task_loss(nclasses, model, device, criterion_task, y_train_task, batched_input_task, task_type, num_inst, start):
+    logging.info(f"[compute_task_loss]: criterion_task:{criterion_task}, y_train_task.shape:{y_train_task.shape}, batched_input_task.shape:{batched_input_task.shape}, task_type:{task_type}, num_inst:{num_inst}, start:{start}")
     model.train()
     out_task, attn = model(torch.as_tensor(batched_input_task, device = device), task_type)
+    logging.info(f"[compute_task_loss]:out_task.shape:{out_task.shape},out_task[0]:{out_task[0]}")
     out_task = out_task.view(-1, nclasses) if task_type == 'classification' else out_task.squeeze()
+    logging.info(f"[compute_task_loss]:after change out_task.shape: {out_task.shape}")
+    logging.info(f"[compute_task_loss] out_task[ : num_inst].shape:{out_task[ : num_inst].shape}, y_train_task[start : start + num_inst].shape:{y_train_task[start : start + num_inst].shape}")
     loss_task = criterion_task(out_task[ : num_inst], torch.as_tensor(y_train_task[start : start + num_inst], device = device)) # dtype = torch.long
+    logging.info(f"[compute_task_loss] loss_task:{loss_task},attn.shape:{attn.shape}")
     return attn, loss_task
 
 
 
 def multitask_train(model, criterion_tar, criterion_task, optimizer, X_train_tar, X_train_task, y_train_tar_masked, y_train_tar_unmasked, \
                     y_train_task, boolean_indices_masked, boolean_indices_unmasked, prop):
-    print(f"[multitask_train] X_train_task :{X_train_task.shape},X_train_tar.shape:{X_train_tar.shape},y_train_task.shape:{y_train_task.shape},y_train_tar_masked.shape:{y_train_tar_masked.shape},y_train_tar_unmasked.shape:{y_train_tar_unmasked.shape}")
+    logging.info(f"[multitask_train] X_train_task :{X_train_task.shape},X_train_tar.shape:{X_train_tar.shape},y_train_task.shape:{y_train_task.shape},y_train_tar_masked.shape:{y_train_tar_masked.shape},y_train_tar_unmasked.shape:{y_train_tar_unmasked.shape}")
     model.train() # Turn on the train mode
     total_loss_tar_masked, total_loss_tar_unmasked, total_loss_task = 0.0, 0.0, 0.0
     num_batches = math.ceil(X_train_tar.shape[0] / prop['batch'])
@@ -197,15 +214,17 @@ def multitask_train(model, criterion_tar, criterion_task, optimizer, X_train_tar
     for i in range(num_batches):
         start = int(i * prop['batch'])
         end = int((i + 1) * prop['batch'])
+        # 该轮batch 的数量 
+        # 即使 start:end 超过了 y_train本身的长度， 返回的也是y_train_task本身的长度，这样num_inst又回去了
         num_inst = y_train_task[start : end].shape[0]
-        
+        logging.info(f"[multitask_train] batch:{i}, num_inst:{num_inst}, start:{start}, end:{end}")
         optimizer.zero_grad()
         
         batched_input_tar = X_train_tar[start : end]
         batched_input_task = X_train_task[start : end]
         batched_boolean_indices_masked = boolean_indices_masked[start : end]
         batched_boolean_indices_unmasked = boolean_indices_unmasked[start : end]
-        
+        logging.info(f"[multitask_train] batch:{i},batched_input_tar.shape:{batched_input_tar.shape},batched_input_task.shape:{batched_input_task.shape}, batched_boolean_indices_masked.shape:{batched_boolean_indices_masked.shape},batched_boolean_indices_unmasked.shape:{batched_boolean_indices_unmasked.shape}")
         loss_tar_masked, loss_tar_unmasked = compute_tar_loss(model, prop['device'], criterion_tar, y_train_tar_masked, y_train_tar_unmasked, \
             batched_input_tar, batched_boolean_indices_masked, batched_boolean_indices_unmasked, num_inst, start)
         
@@ -222,18 +241,17 @@ def multitask_train(model, criterion_tar, criterion_task, optimizer, X_train_tar
         # torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
         optimizer.step()
         # b = list(train_model.parameters())[0].clone()
-        # print(torch.equal(a.data, b.data))
+        # logging.info(torch.equal(a.data, b.data))
         
         # if list(model.parameters())[0].grad is None:
-        #    print("None")
+        #    logging.info("None")
 
         # remove the diagonal values of the attention map while aggregating the column wise attention scores
         attn_arr.append(torch.sum(attn, axis = 1) - torch.diagonal(attn, offset = 0, dim1 = 1, dim2 = 2))
-      
+        logging.info(f"[multitask_train] torch.sum(attn, axis = 1).shape:{torch.sum(attn, axis = 1).shape},torch.diagonal(attn, offset = 0, dim1 = 1, dim2 = 2).shape:{torch.diagonal(attn, offset = 0, dim1 = 1, dim2 = 2).shape}")
     instance_weights = torch.cat(attn_arr, axis = 0)
+    logging.info(f"[multitask_train] len(attn_arr):{len(attn_arr)}, attn_arr[0].shape:{attn_arr[0].shape}, instance_weights.shape:{instance_weights.shape}")
     return total_loss_tar_masked, total_loss_tar_unmasked, total_loss_task / y_train_task.shape[0], instance_weights
-
-
 
 def evaluate(y_pred, y, nclasses, criterion, task_type, device, avg):
     results = []
@@ -282,10 +300,11 @@ def test(model, X, y, batch, nclasses, criterion, task_type, device, avg):
 def training(model, optimizer, criterion_tar, criterion_task, best_model, best_optimizer, X_train_task, y_train_task, X_test, y_test, prop):
     tar_loss_masked_arr, tar_loss_unmasked_arr, tar_loss_arr, task_loss_arr, min_task_loss = [], [], [], [], math.inf
     acc, rmse, mae = 0, math.inf, math.inf
-
+    # 初始的权重，用于后续的实例掩码操作(batch_size, seq_len)
     instance_weights = torch.as_tensor(torch.rand(X_train_task.shape[0], prop['seq_len']), device = prop['device'])
     for epoch in range(1, prop['epochs'] + 1):
         
+        # 对训练数据进行随机实例掩码，准备重建任务的数据
         X_train_tar, y_train_tar_masked, y_train_tar_unmasked, boolean_indices_masked, boolean_indices_unmasked = \
             random_instance_masking(X_train_task, prop['masking_ratio'], prop['ratio_highest_attention'], instance_weights)
         
@@ -298,7 +317,7 @@ def training(model, optimizer, criterion_tar, criterion_task, best_model, best_o
         tar_loss = tar_loss_masked + tar_loss_unmasked
         tar_loss_arr.append(tar_loss)
         task_loss_arr.append(task_loss)
-        print('Epoch: ' + str(epoch) + ', TAR Loss: ' + str(tar_loss), ', TASK Loss: ' + str(task_loss))
+        logging.info('Epoch: ' + str(epoch) + ', TAR Loss: ' + str(tar_loss), ', TASK Loss: ' + str(task_loss))
 
         # save model and optimizer for lowest training loss on the end task
         if task_loss < min_task_loss:
@@ -316,9 +335,9 @@ def training(model, optimizer, criterion_tar, criterion_task, best_model, best_o
             mae = test_metrics[1]
 
     if prop['task_type'] == 'classification':
-        print('Dataset: ' + prop['dataset'] + ', Acc: ' + str(acc))
+        logging.info('Dataset: ' + prop['dataset'] + ', Acc: ' + str(acc))
     elif prop['task_type'] == 'regression':
-        print('Dataset: ' + prop['dataset'] + ', RMSE: ' + str(rmse) + ', MAE: ' + str(mae))
+        logging.info('Dataset: ' + prop['dataset'] + ', RMSE: ' + str(rmse) + ', MAE: ' + str(mae))
 
     del model
     torch.cuda.empty_cache()
