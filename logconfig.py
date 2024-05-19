@@ -2,7 +2,7 @@ import os
 import logging
 from datetime import datetime
 
-def setup_logging(dir):
+def setup_logging(dir,name="kailuan"):
     # current_directory = os.path.dirname(os.path.abspath(__file__))
     log_directory = os.path.join(dir, 'logs')
     os.makedirs(log_directory, exist_ok=True)
@@ -11,7 +11,7 @@ def setup_logging(dir):
     current_date = datetime.now().strftime('%Y-%m-%d')
 
     # 构建日志文件路径
-    log_file_path = os.path.join(log_directory, f'fib_detec_{current_date}.log')
+    log_file_path = os.path.join(log_directory, f'{name}_{current_date}.log')
 
     logger = logging.getLogger()
     if not logger.handlers:

@@ -4,6 +4,54 @@ from sklearn.preprocessing import StandardScaler
 import logging
 import os
 
+
+import numpy as np
+import torch
+
+
+class EarlyStopping:
+    def __init__(self, patience=20, delta=0.01):
+        self.patience = patience
+        self.delta = delta
+        self.best_score = None
+        self.early_stop = False
+        self.counter = 0
+
+    def __call__(self, val_loss, model, optimizer):
+        score = -val_loss
+
+        if self.best_score is None:
+            self.best_score = score
+            self.save_checkpoint(val_loss, model, optimizer)
+        elif score < self.best_score + self.delta:
+            self.counter += 1
+            if self.counter >= self.patience:
+                self.early_stop = True
+        else:
+            self.best_score = score
+            self.save_checkpoint(val_loss, model, optimizer)
+            self.counter = 0
+
+    def save_checkpoint(self, val_loss, model, optimizer):
+        '''Saves model when validation loss decrease.'''
+        torch.save(model.state_dict(), 'checkpoint.pt')
+        torch.save(optimizer.state_dict(), 'optimizer.pt')
+
+
+def slice_time_series(data, labels, window_size, step_size):
+    sliced_data = []
+    sliced_labels = []
+    
+    for i in range(len(data)):
+        series = data[i]
+        label = labels[i]
+        for start in range(0, series.shape[0] - window_size + 1, step_size):
+            end = start + window_size
+            sliced_data.append(series[start:end])
+            sliced_labels.append(label)
+    
+    return np.array(sliced_data), np.array(sliced_labels)
+
 def create_directory(directory_path):
     if os.path.exists(directory_path):
         print(directory_path,"exist")
@@ -60,9 +108,8 @@ def create_path(root_dir, classifier_name, archive_name):
 
 
 ### Splits 函数实现
-
 def splits(X, y, k):
-    kf = KFold(n_splits=k)
+    kf = KFold(n_splits=k, shuffle=True, random_state=42)
     folds = []
     
     for train_index, val_index in kf.split(X):

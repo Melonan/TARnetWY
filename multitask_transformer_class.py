@@ -5,6 +5,7 @@ Created on Sat Nov 21 15:04:31 2020
 @author: Ranak Roy Chowdhury
 """
 
+import logging
 import torch
 import torch.nn as nn
 import math
@@ -114,7 +115,11 @@ class MultitaskTransformerModel(nn.Module):
 
         
     def forward(self, x, task_type):
+        logging.info(f"---MultitaskTransformerModel forward---")
+        logging.info(f"[MultitaskTransformerModel] x.shape:{x.shape}")
         x = self.trunk_net(x.permute(1, 0, 2))
+        logging.info(f"[MultitaskTransformerModel] x.shape after Trunk_net:{x.shape}")
+        
         x, attn = self.transformer_encoder(x)
         x = self.batch_norm(x)
         # x : seq_len x batch x emb_size
